@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0e1420">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Tram alerte">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Tram alerte</title>
+<meta name="description" content="Dans combien de temps je dois partir pour attraper le prochain tram ? Temps réel Ginko (Besançon) moins le temps de marche jusqu'à l'arrêt.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-maskable-192.png">
+</head>
+<body>
+<main class="mx-auto flex max-w-md flex-col gap-3 p-3">
+  <div id="install" class="hidden items-center gap-3 rounded-2xl border border-line bg-panel px-3.5 py-2.5 text-sm">
+    <img src="icons/icon.svg" alt="" class="h-9 w-9 flex-none">
+    <div class="min-w-0 flex-1">
+      <b>Ajoute Tram alerte à ton écran d'accueil</b>
+      <span id="install-aide" class="block text-[13px] text-dim"></span>
+    </div>
+    <button id="install-go" class="btn-accent hidden flex-none">Installer</button>
+    <button id="install-non" class="iconbtn" aria-label="Ne plus proposer">✕</button>
+  </div>
+
+  <header class="flex items-start justify-between gap-3 px-1">
+    <div class="min-w-0">
+      <h1 class="text-xl font-bold leading-tight">Tram alerte</h1>
+      <p id="selection" class="text-sm text-dim"></p>
+    </div>
+    <button id="modifier" class="btn flex-none">Réglages</button>
+  </header>
+
+  <section id="verdict" class="v-inconnu rounded-2xl px-4 py-6 text-center text-white">
+    <div id="verdict-titre" class="text-2xl font-black">Pas de tram annoncé</div>
+    <div id="verdict-compte" class="my-2 text-[clamp(40px,13vw,64px)] font-black leading-none tabular-nums whitespace-nowrap">--</div>
+    <div id="verdict-detail" class="text-sm opacity-90"></div>
+  </section>
+
+  <section class="card">
+    <div class="hdr">Prochains passages</div>
+    <ul id="next" class="flex flex-col gap-1.5 text-sm"></ul>
+    <p id="etat" class="mt-2 text-xs text-dim"></p>
+  </section>
+
+  <section id="reglages" class="card hidden">
+    <div class="hdr">Réglages</div>
+    <div class="flex flex-col gap-4">
+      <div>
+        <label for="arret-q" class="mb-1 block text-sm font-semibold">Arrêt de départ</label>
+        <form id="arret-form" class="flex gap-2">
+          <input id="arret-q" class="field" type="search" placeholder="Nom de l'arrêt" autocomplete="off" enterkeyhint="search">
+          <button type="submit" id="arret-chercher" class="btn-accent flex-none">Chercher</button>
+          <button type="button" id="arret-geo" class="iconbtn h-auto" aria-label="Arrêts autour de moi" title="Arrêts autour de moi">◎</button>
+        </form>
+        <p id="arret-info" class="mt-1 text-xs text-dim"></p>
+        <div id="arret-resultats" class="mt-2 flex flex-wrap gap-2"></div>
+      </div>
+
+      <div id="directions-bloc" class="hidden">
+        <div class="mb-1 text-sm font-semibold">Trams et bus qui me vont</div>
+        <p class="mb-2 text-xs text-dim">Coche toutes les directions qui t'emmènent à bon port, le verdict prend le premier qui passe.</p>
+        <div id="directions" class="flex flex-col gap-1.5"></div>
+      </div>
+
+      <div class="grid grid-cols-2 gap-2">
+        <label class="text-xs text-dim">Temps pour partir, chaussures et marche (min)
+          <input id="departMin" class="field mt-1" type="number" inputmode="numeric" min="1" max="45">
+        </label>
+        <label class="text-xs text-dim">Marge de sécurité (min)
+          <input id="margeMin" class="field mt-1" type="number" inputmode="numeric" min="0" max="10">
+        </label>
+      </div>
+
+      <div>
+        <label for="cle" class="mb-1 block text-sm font-semibold">Clé API Ginko</label>
+        <p id="cle-etat" class="mb-2 text-xs text-dim"></p>
+        <form id="cle-form" class="flex gap-2">
+          <input id="cle" class="field" type="password" placeholder="Colle ta clé ici" autocomplete="off">
+          <button type="submit" class="btn flex-none">Enregistrer</button>
+          <button type="button" id="cle-oublier" class="btn hidden flex-none">Oublier</button>
+        </form>
+        <p class="mt-2 text-xs text-dim">L'API Ginko est gratuite mais demande une clé. Pour essayer tout de suite, <a id="cle-essai" class="underline" href="https://api.ginko.voyage/DR/getCleTemporaire.do" target="_blank" rel="noopener">ouvre la clé d'essai du jour</a>, copie la valeur de "key" et colle-la ici (elle expire au bout de 24 h). Pour une clé définitive, écris à ginko.support-ssi@keolis.com avec l'objet "Demande de clé API". La clé reste dans ce navigateur, rien n'est envoyé ailleurs qu'à Ginko.</p>
+      </div>
+    </div>
+  </section>
+
+  <footer class="px-1 pb-2 text-center text-[11px] leading-relaxed text-dim">
+    Temps réel <a class="underline" href="https://api.ginko.voyage/" rel="noopener">Ginko</a> (Keolis Besançon Mobilités, licence ODbL).
+    Pas de serveur, rien n'est collecté.
+    <a class="underline" href="https://github.com/jlzdev/tramalerte" rel="noopener">Code source</a>
+  </footer>
+</main>
+<script type="module" src="/src/main.ts"></script>
+</body>
+</html>
