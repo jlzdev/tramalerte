@@ -6,8 +6,9 @@ reste pour partir de chez soi, avec un verdict en couleur : vert "tu as le temps
 "prépare-toi", rouge "pars maintenant". Les passages trop proches pour être attrapés sont
 listés en gris, le verdict porte sur le premier tram atteignable.
 
-Page unique, 100 % statique, en ligne sur https://jlzdev.github.io/tramalerte/ et
-installable sur l'écran d'accueil (PWA). Réseau Ginko (Besançon) uniquement.
+Page unique, 100 % statique, en ligne sur https://jlzdev.github.io/tramalerte/,
+installable sur l'écran d'accueil depuis le menu du navigateur (PWA). Réseau Ginko
+(Besançon) uniquement.
 
 ## Données
 

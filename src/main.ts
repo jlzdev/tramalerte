@@ -1,17 +1,13 @@
 import { registerSW } from 'virtual:pwa-register'
 import './style.css'
-import { initInstall } from './lib/install'
 import { figer, initStore, onChange, state, type Direction } from './store'
 import type { Passage } from './lib/depart'
-import { initInstallUi, renderInstall } from './ui/install'
 import { renderNext } from './ui/next'
 import { initSettingsUi, renderSelection } from './ui/settings'
 import { renderVerdict } from './ui/verdict'
 
 registerSW({ immediate: true })
 
-initInstallUi()
-initInstall(renderInstall)
 initSettingsUi()
 onChange(() => {
   renderSelection()
