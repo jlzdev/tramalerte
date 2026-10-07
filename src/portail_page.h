@@ -49,7 +49,7 @@ a{color:#4aa8ff}
 <input id="cle" type="password" placeholder="Colle ta clé ici" autocomplete="off">
 <button type="button" id="cle-voir">Voir</button>
 </div>
-<p class="dim">Pour essayer tout de suite, <a href="https://api.ginko.voyage/DR/getCleTemporaire.do" target="_blank" rel="noopener">ouvre la clé d'essai du jour</a>, copie la valeur de "key" (elle expire au bout de 24 h). Pour une clé définitive, écris à ginko.support-ssi@keolis.com avec l'objet "Demande de clé API". La clé reste dans l'afficheur et ce téléphone ne l'envoie qu'à Ginko.</p>
+<p class="dim">Sans clé définitive, <a href="https://api.ginko.voyage/DR/getCleTemporaire.do" target="_blank" rel="noopener">la clé d'essai du jour</a> dépanne 24 h : copie la valeur de "key" et colle-la ici. La clé reste dans l'afficheur.</p>
 </section>
 
 <section class="card">

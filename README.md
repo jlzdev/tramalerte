@@ -8,10 +8,6 @@ atteignable.
 
 ![écran prépare-toi](docs/ecran-prepare.png) ![écran pars maintenant](docs/ecran-cours.png)
 
-Inspiré du [Métronome](https://metronome.aywen.fr) d'Aywen (même écran, même câblage), avec un
-décompte à la seconde, une configuration entièrement depuis le téléphone et aucun secret dans
-le code.
-
 ## Matériel (45 à 55 euros)
 
 | Pièce | Prix | Remarques |
@@ -67,8 +63,7 @@ python tools/fontconvert.py /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
    et choisir sa box dans le portail qui s'ouvre.
 2. L'écran affiche un second QR code avec l'adresse de l'afficheur sur le réseau
    (`http://192.168.x.x/`). La page demande :
-   - la clé API Ginko : la clé d'essai du jour (lien sur la page, valable 24 h) ou une clé
-     définitive demandée par mail à ginko.support-ssi@keolis.com (objet "Demande de clé API") ;
+   - la clé API Ginko (la clé d'essai du jour, lien sur la page, dépanne 24 h) ;
    - l'arrêt de départ (recherche par nom ou autour de soi) ;
    - les directions qui conviennent (plusieurs possibles, trams et bus) ;
    - le temps pour partir (chaussures et marche), la marge, la plage de nuit.
@@ -112,7 +107,7 @@ Cette logique vit dans [src/depart.cpp](src/depart.cpp), sans dépendance Arduin
 
 ## Données et sécurité
 
-- Temps réel [Ginko](https://api.ginko.voyage/) (Keolis Besançon Mobilités), licence ODbL.
+- Temps réel [Ginko](https://api.ginko.voyage/), licence ODbL.
   Une seule méthode côté firmware (`TR/getTempsLieu`, POST, TLS 1.2, racine ISRG Root X1
   épinglée). La page de configuration appelle Ginko directement depuis le téléphone pour la
   recherche d'arrêt et les directions.
