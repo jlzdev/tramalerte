@@ -1,7 +1,6 @@
-node_modules/
-dist/
+.pio/
+sim/out/
 *.log
-.env.local
 NOTES.local.md
 CLAUDE.md
 .claude/
