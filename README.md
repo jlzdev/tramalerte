@@ -46,9 +46,16 @@ sudo usermod -aG dialout $USER   # une fois, puis se reconnecter : accès au por
 pio test -e native                          # scénarios de la logique de départ
 pio run -e sim && ./.pio/build/sim/program  # rend chaque écran dans sim/out/*.png
 pio run -e esp32dev                         # compile le firmware
-pio run -e esp32dev -t upload               # téléverse (ESP32 branché en USB)
-pio device monitor                          # logs série à 115200 bauds
+pio run -e esp32dev -t upload               # premier téléversement, ESP32 branché en USB
+pio run -e ota -t upload                    # mises à jour suivantes par le Wi-Fi (tramalerte.local)
+python tools/serie.py /dev/ttyUSB0 30       # logs série pendant 30 s (--reset pour redémarrer)
 ```
+
+Premier flash par USB : si le téléversement échoue avec "Failed to connect to ESP32", maintenir
+le bouton BOOT de la carte enfoncé pendant la tentative (la carte ne passe pas toujours seule en
+mode téléversement). Ensuite, tout passe par le Wi-Fi : `pio run -e ota -t upload` envoie le
+firmware à `tramalerte.local` (ou `--upload-port 192.168.x.x`), l'écran affiche "Mise à jour"
+puis l'afficheur redémarre avec ses réglages intacts.
 
 Les polices sont générées depuis DejaVu avec `tools/fontconvert.py` (freetype-py dans le venv) :
 
@@ -70,7 +77,10 @@ python tools/fontconvert.py /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
 3. Enregistrer : l'afficheur passe en régime normal. La page reste accessible à la même
    adresse pour changer un réglage ou recoller une clé ; l'adresse est rappelée en bas de l'écran.
 
-Appui de 3 s sur le bouton BOOT de l'ESP32 : le Wi-Fi est oublié et le portail revient.
+Oublier le Wi-Fi (nouvelle box, nouveau mot de passe) : maintenir le bouton BOOT de l'ESP32.
+La LED bleue de la carte s'allume, et au bout de 3 s l'écran demande de relâcher ; au
+relâchement, le Wi-Fi est oublié et le portail revient. Relâcher avant 3 s ne fait rien.
+Le bouton est ignoré pendant les 30 premières secondes après un démarrage.
 
 ## Comportement
 
@@ -114,7 +124,8 @@ Cette logique vit dans [src/depart.cpp](src/depart.cpp), sans dépendance Arduin
 - La clé API, le Wi-Fi, l'arrêt et les réglages sont dans la mémoire flash de l'ESP32
   (Preferences). Rien de tout cela n'est dans ce dépôt.
 - La page de configuration est servie en HTTP sur le réseau local, sans authentification :
-  n'importe qui sur le Wi-Fi de la maison peut la voir, clé comprise.
+  n'importe qui sur le Wi-Fi de la maison peut la voir, clé comprise. La mise à jour par le
+  Wi-Fi (ArduinoOTA) est elle aussi ouverte sur le réseau local, sans mot de passe.
 
 ## Boîtier
 

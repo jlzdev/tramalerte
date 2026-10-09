@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include <ArduinoOTA.h>
 #include <WiFi.h>
 #include <esp_task_wdt.h>
 
@@ -14,7 +15,9 @@
 #include "portail.h"
 
 static const int BOUTON_BOOT = 0;
+static const int LED_CARTE = 2;
 static const unsigned long APPUI_LONG_MS = 3000;
+static const unsigned long BOUTON_IGNORE_MS = 30000;
 static const unsigned long FETCH_MS = 30000;
 static const unsigned long FETCH_PROCHE_MS = 15000;
 static const unsigned long FETCH_NUIT_MS = 600000;
@@ -220,21 +223,51 @@ static void appliquerConfig() {
 }
 
 static void gererBouton() {
+  static bool appuiAIgnorer = false;
+  static bool avertissement = false;
   bool appuye = digitalRead(BOUTON_BOOT) == LOW;
-  if (appuye && !appuiDepuis) appuiDepuis = millis();
-  if (!appuye) appuiDepuis = 0;
+  if (millis() < BOUTON_IGNORE_MS) {
+    appuiAIgnorer = appuye;
+    appuiDepuis = 0;
+    return;
+  }
+  if (appuiAIgnorer) {
+    if (!appuye) appuiAIgnorer = false;
+    return;
+  }
+  if (appuye && !appuiDepuis) {
+    appuiDepuis = millis();
+    avertissement = false;
+    digitalWrite(LED_CARTE, HIGH);
+  }
+  if (!appuye && appuiDepuis) {
+    bool longAppui = millis() - appuiDepuis > APPUI_LONG_MS;
+    appuiDepuis = 0;
+    digitalWrite(LED_CARTE, LOW);
+    if (longAppui) {
+      Serial.println("[BOUTON] appui long relache : Wi-Fi oublie, redemarrage");
+      ecranAfficherMessage("Réinitialisation", "Wi-Fi oublié, l'afficheur redémarre en mode configuration.");
+      wifiOublier();
+      delay(500);
+      ESP.restart();
+    }
+    return;
+  }
   if (appuye && millis() - appuiDepuis > APPUI_LONG_MS) {
-    Serial.println("[BOUTON] appui long : Wi-Fi oublie, redemarrage");
-    ecranAfficherMessage("Réinitialisation", "Le Wi-Fi est oublié, l'afficheur redémarre en mode configuration.");
-    wifiOublier();
-    delay(500);
-    ESP.restart();
+    if (!avertissement) {
+      avertissement = true;
+      ecranAfficherMessage("Bouton BOOT", "Relâche le bouton pour oublier le Wi-Fi et relancer la configuration.");
+      dernierRendu = "";
+    }
+    digitalWrite(LED_CARTE, (millis() / 200) % 2);
   }
 }
 
 void setup() {
   Serial.begin(115200);
   pinMode(BOUTON_BOOT, INPUT_PULLUP);
+  pinMode(LED_CARTE, OUTPUT);
+  digitalWrite(LED_CARTE, LOW);
   Serial.println("\n[TRAMALERTE] demarrage");
   ecranInit();
   configCharger();
@@ -246,11 +279,17 @@ void setup() {
   Serial.printf("[WIFI] connecte, IP %s\n", WiFi.localIP().toString().c_str());
   reglerHeure();
   serveurDemarrer(simuler, etatJson);
+  ArduinoOTA.setHostname("tramalerte");
+  ArduinoOTA.onStart([] { ecranAfficherMessage("Mise à jour", "Nouveau firmware en cours d'installation par le Wi-Fi, ne pas débrancher."); });
+  ArduinoOTA.onError([](ota_error_t e) { Serial.printf("[OTA] erreur %u\n", (unsigned)e); });
+  ArduinoOTA.begin();
+  Serial.println("[OTA] pret, cible tramalerte.local");
   appliquerConfig();
 }
 
 void loop() {
   serveurTraiter();
+  ArduinoOTA.handle();
   gererBouton();
   if (serveurConfigChangee()) appliquerConfig();
   if (!configPrete) {

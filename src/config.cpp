@@ -11,7 +11,7 @@ static int borner(int v, int min, int max) {
 }
 
 void configCharger() {
-  memoire.begin(ESPACE, true);
+  memoire.begin(ESPACE, false);
   config.cleApi = memoire.getString("cle", "");
   config.arret = memoire.getString("arret", "");
   config.tram = memoire.getBool("tram", false);

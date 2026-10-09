@@ -26,7 +26,7 @@ bool wifiConnecter(bool portailSiEchec) {
   wm.setMenu(menu);
   wm.setAPCallback(afficherQrWifi);
   wm.setConnectTimeout(20);
-  wm.setConfigPortalTimeout(600);
+  wm.setConfigPortalTimeout(wm.getWiFiIsSaved() ? 300 : 0);
   wm.setEnableConfigPortal(portailSiEchec);
   bool ok = wm.autoConnect(RESEAU_NOM, RESEAU_MDP);
   if (ok) WiFi.setAutoReconnect(true);

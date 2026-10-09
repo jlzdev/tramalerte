@@ -95,8 +95,8 @@ Contenu contenuDepuisVerdict(const depart::Verdict& v, int64_t nowMs) {
     p.ligne = cand.passage.ligne;
     p.destination = cand.passage.destination;
     p.rate = cand.etat == depart::Etat::Rate;
-    p.quand = p.rate ? "trop tard, tram dans " + depart::fmtDuree(cand.tramSec, true)
-                     : "pars " + depart::fmtHM(std::max(nowMs, cand.departMs)) + ", tram " + depart::fmtHM(cand.tramMs);
+    if (p.rate) p.quand = cand.tramSec < 60 ? "trop tard, tram imminent" : "trop tard, tram dans " + depart::fmtDuree(cand.tramSec);
+    else p.quand = "pars " + depart::fmtHM(std::max(nowMs, cand.departMs)) + ", tram " + depart::fmtHM(cand.tramMs);
     if (!cand.passage.fiable) p.quand += " (th.)";
     c.prochains.push_back(p);
   }
