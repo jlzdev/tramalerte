@@ -10,13 +10,14 @@
 
 using namespace depart;
 
-static Passage passage(const char* ligne, const char* dest, int secondes, bool fiable = true) {
+static Passage passage(const char* ligne, const char* dest, int secondes, bool fiable = true, bool bus = false) {
   Passage p;
   p.ligne = ligne;
   p.idLigne = ligne[0] == 'T' ? (ligne[1] == '1' ? "101" : "102") : "8";
   p.destination = dest;
   p.secondes = secondes;
   p.fiable = fiable;
+  p.bus = bus;
   return p;
 }
 
@@ -32,18 +33,37 @@ static int64_t maintenant() {
   return (int64_t)mktime(&t) * 1000;
 }
 
+static int problemes = 0;
+
 static void sauver(GFXcanvas1& toile, const char* nom) {
   std::string chemin = std::string("sim/out/") + nom + ".png";
   if (ecrirePngMonochrome(chemin, toile.getBuffer(), dessin::LARGEUR, dessin::HAUTEUR)) printf("ecrit %s\n", chemin.c_str());
   else printf("ECHEC %s\n", chemin.c_str());
+  if (getenv("ZONES")) for (const dessin::Zone& z : dessin::zonesCourantes()) printf("  zone %-28s x=%3d y=%3d w=%3d h=%3d\n", z.nom.c_str(), z.x, z.y, z.w, z.h);
+  for (const std::string& p : dessin::zonesProblemes()) {
+    printf("  PROBLEME %s : %s\n", nom, p.c_str());
+    problemes++;
+  }
+  dessin::zonesReinitialiser();
+}
+
+static dessin::Meteo meteo(int64_t now) {
+  dessin::Meteo m;
+  m.valide = true;
+  m.temperature = 12;
+  m.code = 3;
+  const int codes[3] = {2, 61, 3};
+  const int mins[3] = {6, 11, 9};
+  const int maxs[3] = {13, 16, 15};
+  for (int i = 0; i < 3; i++) m.jours.push_back({dessin::nomJour(now, i), codes[i], mins[i], maxs[i]});
+  return m;
 }
 
 static dessin::Contenu base(const Verdict& v, int64_t now) {
   dessin::Contenu c = dessin::contenuDepuisVerdict(v, now);
-  c.arret = "Battant";
-  c.directions = "T1 > Chalezeule, T2 > Gare Viotte";
-  c.heure = fmtHM(now);
-  c.statut = "Temps réel Ginko 9h37, 192.168.1.42";
+  c.departMin = 5;
+  c.meteo = meteo(now);
+  c.statut = "";
   return c;
 }
 
@@ -55,30 +75,31 @@ int main() {
   const Reglages r = REGLAGES_DEFAUT;
 
   {
-    Verdict v = evaluer({passage("T1", "Chalezeule", 1500), passage("T2", "Gare Viotte", 1900), passage("T1", "Chalezeule", 2700)}, now, now, r);
+    Verdict v = evaluer({passage("T1", "Chalezeule", 1500), passage("T1", "Chalezeule", 2700), passage("T1", "Chalezeule", 3900), passage("T1", "Chalezeule", 5100)}, now, now, r);
     dessin::dessinerVerdict(toile, base(v, now));
     sauver(toile, "tranquille");
   }
   {
-    Verdict v = evaluer({passage("T1", "Chalezeule", 520), passage("T2", "Gare Viotte", 1100), passage("T1", "Chalezeule", 1720)}, now, now, r);
+    Verdict v = evaluer({passage("T1", "Chalezeule", 520), passage("T2", "Gare Viotte", 1100), passage("T1", "Chalezeule", 1720), passage("T2", "Gare Viotte", 2300)}, now, now, r);
     dessin::dessinerVerdict(toile, base(v, now));
     sauver(toile, "prepare");
   }
   {
-    Verdict v = evaluer({passage("T1", "Chalezeule", 390), passage("T2", "Gare Viotte", 900), passage("T1", "Chalezeule", 1590, false)}, now, now, r);
+    Verdict v = evaluer({passage("T1", "Chalezeule", 390), passage("T1", "Chalezeule", 1590, false), passage("T1", "Chalezeule", 2790)}, now, now, r);
     dessin::dessinerVerdict(toile, base(v, now));
     sauver(toile, "cours");
   }
   {
-    Verdict v = evaluer({passage("T1", "Chalezeule", 200), passage("T2", "Gare Viotte", 1420)}, now, now, r);
+    Verdict v = evaluer({passage("8", "Espace Valentin", 200, true, true), passage("8", "Espace Valentin", 1420, true, true), passage("8", "Espace Valentin", 2620, true, true)}, now, now, r);
     dessin::dessinerVerdict(toile, base(v, now));
-    sauver(toile, "rate_puis_suivant");
+    sauver(toile, "bus_rate_puis_suivant");
   }
   {
     Verdict v = evaluer({}, now, now, r);
     dessin::Contenu c = base(v, now);
-    c.detail = "Aucun passage annoncé pour tes directions.";
-    c.statut = "Erreur Ginko : Ginko injoignable (read Timeout), 192.168.1.42";
+    c.message = "Ginko ne répond pas";
+    c.statut = "Erreur Ginko : injoignable, 192.168.1.42";
+    c.meteo.valide = false;
     dessin::dessinerVerdict(toile, c);
     sauver(toile, "inconnu");
   }
@@ -87,8 +108,6 @@ int main() {
     dessin::Contenu c = base(v, now);
     c.nuit = true;
     c.heure = "23h41";
-    c.detail = "Prochain tram connu : T1 à 0h02";
-    c.statut = "Mode nuit jusqu'à 6h, mise à jour toutes les 10 min";
     dessin::dessinerVerdict(toile, c);
     sauver(toile, "nuit");
   }
@@ -101,5 +120,6 @@ int main() {
     dessin::dessinerMessage(toile, "Clé API refusée", "Ouvre http://192.168.1.42/ sur ton téléphone pour coller une nouvelle clé Ginko.");
     sauver(toile, "message");
   }
-  return 0;
+  printf(problemes ? "%d probleme(s) de mise en page\n" : "mise en page sans chevauchement\n", problemes);
+  return problemes ? 1 : 0;
 }

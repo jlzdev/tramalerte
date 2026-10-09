@@ -14,6 +14,8 @@ struct Resultat {
   bool cleRefusee = false;
   String erreur;
   String nomExact;
+  float latitude = 0;
+  float longitude = 0;
   std::vector<depart::Passage> passages;
 };
 

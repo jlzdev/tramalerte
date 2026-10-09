@@ -13,6 +13,7 @@ struct Passage {
   bool sensAller = true;
   int secondes = 0;
   bool fiable = true;
+  bool bus = false;
 };
 
 struct Reglages {

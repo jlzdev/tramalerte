@@ -87,7 +87,7 @@ a{color:#4aa8ff}
 <script>
 const API = 'https://api.ginko.voyage/';
 const $ = (id) => document.getElementById(id);
-let etat = { cle: '', arret: '', tram: false, directions: [], departMin: 5, margeMin: 1, nuitDebut: 23, nuitFin: 6 };
+let etat = { cle: '', arret: '', tram: false, directions: [], departMin: 5, margeMin: 1, nuitDebut: 23, nuitFin: 6, latitude: 0, longitude: 0 };
 let arretsCache = null, lignesCache = null, passagesArret = [];
 
 async function ginko(methode, params) {
@@ -104,7 +104,7 @@ const cleDir = (d) => d.idLigne + '|' + (d.sensAller ? 'A' : 'R');
 function regrouper(liste) {
   const map = new Map();
   for (const a of liste) {
-    const c = map.get(a.nom) || { nom: a.nom, tram: false };
+    const c = map.get(a.nom) || { nom: a.nom, tram: false, latitude: a.latitude, longitude: a.longitude };
     if (a.id.startsWith('t_')) c.tram = true;
     map.set(a.nom, c);
   }
@@ -148,7 +148,7 @@ function autourDeMoi() {
 }
 
 async function choisirArret(c) {
-  etat.arret = c.nom; etat.tram = c.tram; etat.directions = [];
+  etat.arret = c.nom; etat.tram = c.tram; etat.directions = []; etat.latitude = c.latitude || 0; etat.longitude = c.longitude || 0;
   $('arret-resultats').replaceChildren(); $('arret-info').textContent = ''; $('arret-q').value = '';
   renderArret();
   await chargerDirections();
@@ -218,7 +218,7 @@ async function charger() {
 
 async function enregistrer() {
   const b = $('enregistrer'); b.disabled = true; $('retour').textContent = 'Enregistrement...'; $('retour').className = 'dim';
-  const corps = { arret: etat.arret, tram: etat.tram, directions: etat.directions };
+  const corps = { arret: etat.arret, tram: etat.tram, directions: etat.directions, latitude: etat.latitude, longitude: etat.longitude };
   for (const k of ['departMin', 'margeMin', 'nuitDebut', 'nuitFin']) corps[k] = Number($(k).value);
   const cle = $('cle').value.trim();
   if (cle) corps.cle = cle;

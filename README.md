@@ -6,7 +6,7 @@ pour partir, verdict en trois états : "Tu as le temps", "Prépare-toi", "Pars m
 Les passages trop proches pour être attrapés sont barrés, le verdict porte sur le premier tram
 atteignable.
 
-![écran prépare-toi](docs/ecran-prepare.png) ![écran pars maintenant](docs/ecran-cours.png)
+![écran principal](docs/ecran-tranquille.png) ![écran de nuit](docs/ecran-nuit.png)
 
 ## Matériel (45 à 55 euros)
 
@@ -31,6 +31,28 @@ Câblage (SPI matériel de l'ESP32) :
 | GND | GND |
 
 Un module V1 (sans "V2" sur l'étiquette) se pilote avec `-DECRAN_V1` dans `build_flags`.
+
+La nappe fournie avec l'écran a un connecteur PH2.0 côté écran et 8 fils Dupont femelles côté
+ESP32. Les couleurs varient d'un lot à l'autre : suivre l'ordre sérigraphié sur la carte de
+l'écran (VCC, GND, DIN, CLK, CS, DC, RST, BUSY), pas les couleurs.
+
+### Montage dans le boîtier
+
+Avec les connecteurs Dupont enfichés sur les broches, l'ESP32 fait environ 3 cm d'épaisseur.
+Pour un boîtier fin, on supprime les connecteurs :
+
+1. Couper les 8 fils de la nappe juste derrière les boîtiers Dupont, dénuder 3 mm, étamer.
+2. Souder chaque fil sur le dessus de la broche correspondante, côté composants de l'ESP32,
+   3 s de fer par fil, en gardant 8 à 10 cm de fil pour le placement.
+3. Couper les broches au ras du dessous de la carte à la pince coupante à ras (lunettes, les
+   bouts sautent), puis vérifier qu'aucun copeau ne reste entre deux pastilles.
+
+Résultat : ESP32 d'environ 5 mm, écran avec sa carte de pilotage et le connecteur de nappe
+environ 8 mm, à placer côte à côte dans le même plan (pas l'un sur l'autre), pour un boîtier
+de 14 à 15 mm hors tout. La nappe plate qui relie la dalle à sa carte est fragile : ne pas la
+plier vers l'avant ni la replier plusieurs fois. Encombrement du module : 103 x 78,5 mm, zone
+visible 84,8 x 63,6 mm. Prévoir l'accès à la prise USB-C, et un trou en face du bouton BOOT
+(à côté de la prise) pour un trombone, utile seulement pour changer de Wi-Fi.
 
 ## Installation sur le poste
 

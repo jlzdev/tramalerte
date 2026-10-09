@@ -24,8 +24,11 @@ struct Config {
   int margeMin = depart::REGLAGES_DEFAUT.margeMin;
   int nuitDebut = 23;
   int nuitFin = 6;
+  float latitude = 0;
+  float longitude = 0;
 
   bool complete() const { return cleApi.length() > 0 && arret.length() > 0 && directions.length() > 0; }
+  bool positionConnue() const { return latitude != 0 || longitude != 0; }
   std::vector<Direction> directionsParsees() const;
   depart::Reglages reglages() const { return depart::normaliserReglages(departMin, margeMin); }
   bool directionChoisie(const String& idLigne, bool sensAller) const;

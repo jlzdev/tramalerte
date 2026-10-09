@@ -45,7 +45,7 @@ Resultat tempsLieu(const String& cleApi, const String& nomArret) {
     return r;
   }
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-  int code = http.POST("apiKey=" + encoder(cleApi) + "&nom=" + encoder(nomArret));
+  int code = http.POST("apiKey=" + encoder(cleApi) + "&nom=" + encoder(nomArret) + "&nb=4");
   if (code != 200) {
     r.erreur = code < 0 ? "Ginko injoignable (" + HTTPClient::errorToString(code) + ")" : "Ginko HTTP " + String(code);
     http.end();
@@ -56,6 +56,8 @@ Resultat tempsLieu(const String& cleApi, const String& nomArret) {
   filtre["ok"] = true;
   filtre["msg"] = true;
   filtre["objets"]["nomExact"] = true;
+  filtre["objets"]["latitude"] = true;
+  filtre["objets"]["longitude"] = true;
   JsonObject f = filtre["objets"]["listeTemps"][0].to<JsonObject>();
   f["numLignePublic"] = true;
   f["idLigne"] = true;
@@ -63,6 +65,7 @@ Resultat tempsLieu(const String& cleApi, const String& nomArret) {
   f["sensAller"] = true;
   f["tempsEnSeconde"] = true;
   f["fiable"] = true;
+  f["modeTransport"] = true;
 
   JsonDocument doc;
   DeserializationError e = deserializeJson(doc, http.getStream(), DeserializationOption::Filter(filtre));
@@ -78,6 +81,8 @@ Resultat tempsLieu(const String& cleApi, const String& nomArret) {
     return r;
   }
   r.nomExact = doc["objets"]["nomExact"] | nomArret.c_str();
+  r.latitude = doc["objets"]["latitude"] | 0.0f;
+  r.longitude = doc["objets"]["longitude"] | 0.0f;
   for (JsonObject t : doc["objets"]["listeTemps"].as<JsonArray>()) {
     if (!t["tempsEnSeconde"].is<int>()) continue;
     depart::Passage p;
@@ -87,6 +92,7 @@ Resultat tempsLieu(const String& cleApi, const String& nomArret) {
     p.sensAller = t["sensAller"] | false;
     p.secondes = t["tempsEnSeconde"].as<int>();
     p.fiable = t["fiable"] | true;
+    p.bus = (t["modeTransport"] | 1) != 1;
     r.passages.push_back(p);
   }
   r.ok = true;

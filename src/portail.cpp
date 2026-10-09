@@ -65,6 +65,8 @@ static void envoyerConfig() {
   doc["margeMin"] = config.margeMin;
   doc["nuitDebut"] = config.nuitDebut;
   doc["nuitFin"] = config.nuitFin;
+  doc["latitude"] = config.latitude;
+  doc["longitude"] = config.longitude;
   doc["ip"] = WiFi.localIP().toString();
   String json;
   serializeJson(doc, json);
@@ -108,6 +110,13 @@ static void enregistrer() {
   if (doc["margeMin"].is<int>()) config.margeMin = doc["margeMin"].as<int>();
   if (doc["nuitDebut"].is<int>()) config.nuitDebut = constrain(doc["nuitDebut"].as<int>(), 0, 24);
   if (doc["nuitFin"].is<int>()) config.nuitFin = constrain(doc["nuitFin"].as<int>(), 0, 24);
+  if (doc["latitude"].is<float>() && doc["longitude"].is<float>()) {
+    float la = doc["latitude"].as<float>(), lo = doc["longitude"].as<float>();
+    if (la >= -90 && la <= 90 && lo >= -180 && lo <= 180) {
+      config.latitude = la;
+      config.longitude = lo;
+    }
+  }
   depart::Reglages r = config.reglages();
   config.departMin = r.departMin;
   config.margeMin = r.margeMin;

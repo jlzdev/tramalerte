@@ -2,7 +2,6 @@
 #include <ArduinoJson.h>
 #include <ArduinoOTA.h>
 #include <WiFi.h>
-#include <esp_task_wdt.h>
 
 #include <ctime>
 #include <sys/time.h>
@@ -12,6 +11,7 @@
 #include "dessin.h"
 #include "ecran.h"
 #include "ginko.h"
+#include "meteo.h"
 #include "portail.h"
 
 static const int BOUTON_BOOT = 0;
@@ -22,16 +22,22 @@ static const unsigned long FETCH_MS = 30000;
 static const unsigned long FETCH_PROCHE_MS = 15000;
 static const unsigned long FETCH_NUIT_MS = 600000;
 static const unsigned long FETCH_ERREUR_MS = 20000;
+static const unsigned long METEO_MS = 30UL * 60 * 1000;
+static const unsigned long METEO_ERREUR_MS = 5UL * 60 * 1000;
 static const unsigned long COMPLET_MS = 30UL * 60 * 1000;
 static const unsigned long PERIME_MS = 120000;
 static const unsigned long NTP_MS = 12UL * 3600 * 1000;
 static const double PROCHE_SEC = 300;
+static const int ARRONDI_SEC = 10;
 
 static std::vector<depart::Passage> passagesTous;
 static int64_t fetchedAtMs = 0;
 static unsigned long derniereTentative = 0;
 static unsigned long dernierComplet = 0;
 static unsigned long dernierNtp = 0;
+static unsigned long derniereMeteo = 0;
+static bool meteoEnEchec = false;
+static dessin::Meteo meteoCourante;
 static String erreur;
 static bool cleRefusee = false;
 static bool simulation = false;
@@ -90,7 +96,14 @@ static void rafraichir() {
     fetchedAtMs = nowMs();
     erreur = "";
     cleRefusee = false;
-    Serial.printf("[GINKO] %d passage(s) a %s, heap %u\n", (int)r.passages.size(), r.nomExact.c_str(), ESP.getFreeHeap());
+    if (!config.positionConnue() && (r.latitude != 0 || r.longitude != 0)) {
+      config.latitude = r.latitude;
+      config.longitude = r.longitude;
+      configEnregistrer();
+      derniereMeteo = 0;
+      Serial.println("[GINKO] position de l'arret memorisee pour la meteo");
+    }
+    Serial.printf("[GINKO] %d passage(s), heap %u\n", (int)r.passages.size(), ESP.getFreeHeap());
   } else {
     erreur = r.erreur;
     cleRefusee = r.cleRefusee;
@@ -102,6 +115,14 @@ static void rafraichir() {
   }
 }
 
+static void rafraichirMeteo() {
+  derniereMeteo = millis();
+  if (WiFi.status() != WL_CONNECTED || !config.positionConnue() || !heureValide()) return;
+  dessin::Meteo m;
+  meteoEnEchec = !meteo::recuperer(config.latitude, config.longitude, nowMs(), m);
+  if (!meteoEnEchec) meteoCourante = m;
+}
+
 static unsigned long intervalleFetch(const depart::Verdict& v) {
   if (enNuit()) return FETCH_NUIT_MS;
   if (!erreur.isEmpty() && !cleRefusee) return FETCH_ERREUR_MS;
@@ -109,53 +130,43 @@ static unsigned long intervalleFetch(const depart::Verdict& v) {
   return c && c->resteSec < PROCHE_SEC ? FETCH_PROCHE_MS : FETCH_MS;
 }
 
-static std::string statutLigne() {
-  std::string s;
-  if (WiFi.status() != WL_CONNECTED) s = "Wi-Fi perdu, reconnexion...";
-  else if (simulation) s = "Simulation";
-  else if (cleRefusee) s = "Clé API refusée";
-  else if (!erreur.isEmpty()) s = "Erreur Ginko : " + std::string(erreur.c_str());
-  else if (fetchedAtMs) s = "Temps réel Ginko " + depart::fmtHM(fetchedAtMs);
-  else s = "Interrogation de Ginko...";
-  if (WiFi.status() == WL_CONNECTED) s += ", " + std::string(WiFi.localIP().toString().c_str());
-  return s;
+static std::string ip() {
+  return std::string(WiFi.localIP().toString().c_str());
 }
 
 static dessin::Contenu contenuCourant(const depart::Verdict& v) {
   const int64_t now = nowMs();
-  dessin::Contenu c = dessin::contenuDepuisVerdict(v, now);
-  c.arret = config.arret.c_str();
-  c.directions = config.libelleDirections().c_str();
+  dessin::Contenu c = dessin::contenuDepuisVerdict(v, now, ARRONDI_SEC);
   c.heure = heureValide() ? depart::fmtHM(now) : "--h--";
-  c.statut = statutLigne();
+  c.departMin = config.departMin;
+  c.meteo = meteoCourante;
+  if (WiFi.status() != WL_CONNECTED) c.statut = "Wi-Fi perdu, reconnexion...";
+  else if (simulation) c.statut = "Simulation";
+  else if (cleRefusee) c.statut = "Clé API refusée, voir http://" + ip() + "/";
+  else if (!erreur.isEmpty()) c.statut = "Ginko : " + std::string(erreur.c_str());
+  else if (fetchedAtMs && now - fetchedAtMs > (int64_t)PERIME_MS) c.statut = "Données de " + depart::fmtHM(fetchedAtMs);
   if (v.etat == depart::Etat::Inconnu) {
-    if (cleRefusee) c.detail = "Ouvre http://" + std::string(WiFi.localIP().toString().c_str()) + "/ pour coller une clé";
-    else if (!erreur.isEmpty() && !fetchedAtMs) c.detail = "Ginko ne répond pas";
-    else if (fetchedAtMs) c.detail = "Aucun passage annoncé pour tes directions";
+    if (cleRefusee) c.message = "Clé API à renouveler";
+    else if (!erreur.isEmpty() && !fetchedAtMs) c.message = "Ginko ne répond pas";
+    else if (fetchedAtMs) c.message = "Rien d'annoncé pour tes directions";
+    else c.message = "Interrogation de Ginko...";
   }
-  if (fetchedAtMs && now - fetchedAtMs > (int64_t)PERIME_MS && v.etat != depart::Etat::Inconnu) {
-    c.detail = "Données de " + depart::fmtHM(fetchedAtMs) + ", " + c.detail;
-  }
-  if (enNuit()) {
-    c.nuit = true;
-    const depart::Candidat* cible = v.cibleOuNull();
-    c.detail = cible ? "Prochain tram connu : " + cible->passage.ligne + " à " + depart::fmtHM(cible->tramMs) : "";
-    c.statut = "Mode nuit jusqu'à " + std::to_string(config.nuitFin) + "h, mise à jour toutes les 10 min";
-  }
+  c.nuit = enNuit();
   return c;
 }
 
 static std::string cleRendu(const dessin::Contenu& c) {
-  std::string s = c.arret + "|" + c.directions + "|" + c.heure + "|" + c.titre + "|" + std::to_string(c.minutes) + "|";
-  s += std::to_string(c.secondes < 0 ? -1 : c.secondes / 10) + "|" + c.detail + "|" + c.statut + "|" + (c.nuit ? "n" : "j");
-  for (const dessin::Prochain& p : c.prochains) s += "|" + p.ligne + p.destination + p.quand + (p.rate ? "r" : "");
+  std::string s = c.heure + "|" + std::to_string((int)c.etat) + "|" + c.ligne + "|" + c.direction + "|" + c.arrivee + "|" + c.depart + "|" + c.dans + "|";
+  s += c.message + "|" + c.statut + "|" + (c.nuit ? "n" : "j") + "|" + std::to_string(c.departMin) + "|";
+  s += std::to_string(c.meteo.valide) + std::to_string(c.meteo.temperature) + std::to_string(c.meteo.code);
+  for (const dessin::Jour& j : c.meteo.jours) s += "|" + j.nom + std::to_string(j.code) + std::to_string(j.tMin) + std::to_string(j.tMax);
+  for (const dessin::Prochain& p : c.prochains) s += "|" + p.ligne + p.heure + (p.rate ? "r" : "") + (p.cible ? "c" : "");
   return s;
 }
 
 static void afficher(bool forcerComplet) {
   depart::Verdict v = verdictCourant();
   dessin::Contenu c = contenuCourant(v);
-  if (c.secondes >= 0) c.secondes -= c.secondes % 10;
   std::string cle = cleRendu(c);
   if (!forcerComplet && cle == dernierRendu) return;
   bool complet = forcerComplet || v.etat != dernierEtat || millis() - dernierComplet > COMPLET_MS;
@@ -183,6 +194,7 @@ static void simuler(const std::vector<int>& secondes) {
       p.destination = dirs[0].destination.c_str();
       p.sensAller = dirs[0].sensAller;
       p.secondes = s;
+      p.bus = !config.tram;
       passagesTous.push_back(p);
     }
   }
@@ -203,6 +215,7 @@ static String etatJson() {
   doc["erreur"] = erreur;
   doc["simulation"] = simulation;
   doc["nuit"] = enNuit();
+  doc["meteo"] = meteoCourante.valide;
   doc["heap"] = ESP.getFreeHeap();
   doc["uptimeS"] = millis() / 1000;
   doc["ip"] = WiFi.localIP().toString();
@@ -219,6 +232,7 @@ static void appliquerConfig() {
   cleRefusee = false;
   dernierRendu = "";
   derniereTentative = 0;
+  derniereMeteo = 0;
   if (!configPrete) afficherQrConfig();
 }
 
@@ -299,6 +313,10 @@ void loop() {
   if (millis() - dernierNtp > NTP_MS) reglerHeure();
   if (!simulation && (derniereTentative == 0 || millis() - derniereTentative > intervalleFetch(verdictCourant()))) {
     rafraichir();
+    afficher(false);
+  }
+  if (derniereMeteo == 0 || millis() - derniereMeteo > (meteoEnEchec ? METEO_ERREUR_MS : METEO_MS)) {
+    rafraichirMeteo();
     afficher(false);
   }
   static unsigned long dernierTick = 0;
