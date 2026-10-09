@@ -61,6 +61,7 @@ static dessin::Meteo meteo(int64_t now) {
 
 static dessin::Contenu base(const Verdict& v, int64_t now) {
   dessin::Contenu c = dessin::contenuDepuisVerdict(v, now);
+  c.arret = "Battant";
   c.departMin = 5;
   c.meteo = meteo(now);
   c.statut = "";
@@ -107,7 +108,9 @@ int main() {
     Verdict v = evaluer({passage("T1", "Chalezeule", 1500)}, now, now, r);
     dessin::Contenu c = base(v, now);
     c.nuit = true;
+    c.nuitFin = 6;
     c.heure = "23h41";
+    c.prochains.clear();
     dessin::dessinerVerdict(toile, c);
     sauver(toile, "nuit");
   }

@@ -21,7 +21,6 @@ struct Config {
   bool tram = false;
   String directions;
   int departMin = depart::REGLAGES_DEFAUT.departMin;
-  int margeMin = depart::REGLAGES_DEFAUT.margeMin;
   int nuitDebut = 23;
   int nuitFin = 6;
   float latitude = 0;
@@ -30,7 +29,7 @@ struct Config {
   bool complete() const { return cleApi.length() > 0 && arret.length() > 0 && directions.length() > 0; }
   bool positionConnue() const { return latitude != 0 || longitude != 0; }
   std::vector<Direction> directionsParsees() const;
-  depart::Reglages reglages() const { return depart::normaliserReglages(departMin, margeMin); }
+  depart::Reglages reglages() const { return depart::normaliserReglages(departMin); }
   bool directionChoisie(const String& idLigne, bool sensAller) const;
   String libelleDirections() const;
 };

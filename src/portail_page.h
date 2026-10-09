@@ -73,12 +73,11 @@ a{color:#4aa8ff}
 <section class="card">
 <div class="hdr">Temps</div>
 <div class="grid">
-<label>Temps pour partir, chaussures et marche (min)<input id="departMin" type="number" inputmode="numeric" min="1" max="45"></label>
-<label>Marge de sécurité (min)<input id="margeMin" type="number" inputmode="numeric" min="0" max="10"></label>
+<label>Temps pour partir vers l'arrêt (min)<input id="departMin" type="number" inputmode="numeric" min="1" max="45"></label>
 <label>Début de la nuit (heure)<input id="nuitDebut" type="number" inputmode="numeric" min="0" max="24"></label>
 <label>Fin de la nuit (heure)<input id="nuitFin" type="number" inputmode="numeric" min="0" max="24"></label>
 </div>
-<p class="dim">La nuit, l'afficheur montre l'heure et ne consulte Ginko que toutes les 10 minutes. Mets les deux heures à la même valeur pour désactiver.</p>
+<p class="dim">La nuit, l'afficheur montre l'heure et la météo et ne consulte plus Ginko. Mets les deux heures à la même valeur pour désactiver.</p>
 </section>
 
 <button type="button" id="enregistrer" class="accent">Enregistrer sur l'afficheur</button>
@@ -87,7 +86,7 @@ a{color:#4aa8ff}
 <script>
 const API = 'https://api.ginko.voyage/';
 const $ = (id) => document.getElementById(id);
-let etat = { cle: '', arret: '', tram: false, directions: [], departMin: 5, margeMin: 1, nuitDebut: 23, nuitFin: 6, latitude: 0, longitude: 0 };
+let etat = { cle: '', arret: '', tram: false, directions: [], departMin: 5, nuitDebut: 23, nuitFin: 6, latitude: 0, longitude: 0 };
 let arretsCache = null, lignesCache = null, passagesArret = [];
 
 async function ginko(methode, params) {
@@ -210,7 +209,7 @@ async function charger() {
     const c = await (await fetch('/config', { cache: 'no-store' })).json();
     etat = { ...etat, ...c };
     $('etat').textContent = 'Afficheur sur ' + c.ip;
-    for (const k of ['departMin', 'margeMin', 'nuitDebut', 'nuitFin']) $(k).value = etat[k];
+    for (const k of ['departMin', 'nuitDebut', 'nuitFin']) $(k).value = etat[k];
     renderCle(); renderArret();
     if (etat.arret && etat.cle) chargerDirections();
   } catch (e) { $('etat').textContent = 'Afficheur injoignable : ' + e.message; }
@@ -219,7 +218,7 @@ async function charger() {
 async function enregistrer() {
   const b = $('enregistrer'); b.disabled = true; $('retour').textContent = 'Enregistrement...'; $('retour').className = 'dim';
   const corps = { arret: etat.arret, tram: etat.tram, directions: etat.directions, latitude: etat.latitude, longitude: etat.longitude };
-  for (const k of ['departMin', 'margeMin', 'nuitDebut', 'nuitFin']) corps[k] = Number($(k).value);
+  for (const k of ['departMin', 'nuitDebut', 'nuitFin']) corps[k] = Number($(k).value);
   const cle = $('cle').value.trim();
   if (cle) corps.cle = cle;
   try {

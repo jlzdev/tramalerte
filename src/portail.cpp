@@ -62,7 +62,6 @@ static void envoyerConfig() {
     o["destination"] = d.destination;
   }
   doc["departMin"] = config.departMin;
-  doc["margeMin"] = config.margeMin;
   doc["nuitDebut"] = config.nuitDebut;
   doc["nuitFin"] = config.nuitFin;
   doc["latitude"] = config.latitude;
@@ -107,7 +106,6 @@ static void enregistrer() {
     config.directions = directionsSerialiser(dirs);
   }
   if (doc["departMin"].is<int>()) config.departMin = doc["departMin"].as<int>();
-  if (doc["margeMin"].is<int>()) config.margeMin = doc["margeMin"].as<int>();
   if (doc["nuitDebut"].is<int>()) config.nuitDebut = constrain(doc["nuitDebut"].as<int>(), 0, 24);
   if (doc["nuitFin"].is<int>()) config.nuitFin = constrain(doc["nuitFin"].as<int>(), 0, 24);
   if (doc["latitude"].is<float>() && doc["longitude"].is<float>()) {
@@ -117,13 +115,11 @@ static void enregistrer() {
       config.longitude = lo;
     }
   }
-  depart::Reglages r = config.reglages();
-  config.departMin = r.departMin;
-  config.margeMin = r.margeMin;
+  config.departMin = config.reglages().departMin;
   configEnregistrer();
   configChangee = true;
-  Serial.printf("[CONFIG] arret %s, directions %s, depart %d min, marge %d min\n",
-                config.arret.c_str(), config.libelleDirections().c_str(), config.departMin, config.margeMin);
+  Serial.printf("[CONFIG] arret %s, directions %s, depart %d min\n",
+                config.arret.c_str(), config.libelleDirections().c_str(), config.departMin);
   serveur.send(200, "text/plain", "ok");
 }
 

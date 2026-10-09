@@ -36,6 +36,7 @@ struct Meteo {
 
 struct Contenu {
   std::string heure;
+  std::string arret;
   depart::Etat etat = depart::Etat::Inconnu;
   bool bus = false;
   std::string ligne;
@@ -50,6 +51,7 @@ struct Contenu {
   Meteo meteo;
   std::string statut;
   bool nuit = false;
+  int nuitFin = 6;
   std::string message;
 };
 

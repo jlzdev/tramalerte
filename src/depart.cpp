@@ -12,16 +12,15 @@ static int borner(long v, int min, int max) {
   return static_cast<int>(v);
 }
 
-Reglages normaliserReglages(long departMin, long margeMin) {
+Reglages normaliserReglages(long departMin) {
   Reglages r;
   r.departMin = borner(departMin, DEPART_MIN_MIN, DEPART_MIN_MAX);
-  r.margeMin = borner(margeMin, MARGE_MIN_MIN, MARGE_MIN_MAX);
   return r;
 }
 
 Verdict evaluer(const std::vector<Passage>& passages, int64_t nowMs, int64_t fetchedAtMs, const Reglages& r) {
   const double ecoule = std::max<double>(0, (nowMs - fetchedAtMs) / 1000.0);
-  const double avance = (r.departMin + r.margeMin) * 60.0;
+  const double avance = r.departMin * 60.0;
   Verdict v;
   for (const Passage& p : passages) {
     Candidat c;

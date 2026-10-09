@@ -95,7 +95,7 @@ python tools/fontconvert.py /usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf
    - la clé API Ginko (la clé d'essai du jour, lien sur la page, dépanne 24 h) ;
    - l'arrêt de départ (recherche par nom ou autour de soi) ;
    - les directions qui conviennent (plusieurs possibles, trams et bus) ;
-   - le temps pour partir (chaussures et marche), la marge, la plage de nuit.
+   - le temps pour partir vers l'arrêt (chaussures et marche comprises), la plage de nuit.
 3. Enregistrer : l'afficheur passe en régime normal. La page reste accessible à la même
    adresse pour changer un réglage ou recoller une clé ; l'adresse est rappelée en bas de l'écran.
 
@@ -111,8 +111,8 @@ Le bouton est ignoré pendant les 30 premières secondes après un démarrage.
 - Rafraîchissement partiel de l'écran dès que le texte change (secondes arrondies à 10 s en
   "prépare-toi" et "pars maintenant", minutes sinon), rafraîchissement complet toutes les 30 min
   et à chaque changement d'état.
-- La nuit (23 h à 6 h par défaut), l'écran montre l'heure et le prochain passage connu, Ginko
-  n'est interrogé que toutes les 10 min.
+- La nuit (23 h à 6 h par défaut), Ginko n'est plus interrogé du tout : l'écran montre l'heure,
+  l'heure de reprise et la météo. Les requêtes reprennent à l'heure de fin de nuit.
 - Wi-Fi perdu, Ginko injoignable, clé refusée : la ligne du bas le dit, et le dernier verdict
   reste affiché avec l'heure de ses données.
 - `http://<ip>/simuler?secondes=390,1500` fige l'afficheur sur des passages simulés (secondes
@@ -124,7 +124,7 @@ Pour chaque passage annoncé par `TR/getTempsLieu` :
 
 ```
 tram  = tempsEnSeconde - (maintenant - heure de la réponse)
-reste = tram - (tempsPourPartir + marge) * 60
+reste = tram - tempsPourPartir * 60
 ```
 
 | État | Condition |

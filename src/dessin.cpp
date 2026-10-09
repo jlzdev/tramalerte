@@ -204,20 +204,23 @@ static void entete(Adafruit_GFX& g, const Contenu& c) {
   g.fillRoundRect(xDroit - wHeure, 8, wHeure, 22, 6, NOIR);
   noter(xDroit - wHeure, 8, wHeure, 22, TypeZone::Cadre, "pastille heure");
   texte(g, xDroit - wHeure + 8, 24, c.heure, BLANC);
-  g.setFont(&Petit7);
-  texteDroite(g, xDroit, 46, "Arrivée à l'arrêt");
-  g.setFont(&Gras13);
-  std::string arrivee = c.arrivee.empty() ? "--h--" : c.arrivee;
-  int wArrivee = largeur(g, arrivee);
-  texteDroite(g, xDroit, 72, arrivee);
-  const int xLimite = xDroit - std::max(wArrivee, 90) - 14;
+  int xLimite = xDroit - 14;
+  if (!c.nuit) {
+    g.setFont(&Petit7);
+    texteDroite(g, xDroit, 46, "Arrivée à l'arrêt");
+    g.setFont(&Gras13);
+    std::string arrivee = c.arrivee.empty() ? "--h--" : c.arrivee;
+    int wArrivee = largeur(g, arrivee);
+    texteDroite(g, xDroit, 72, arrivee);
+    xLimite = xDroit - std::max(wArrivee, 90) - 14;
+  }
 
   icone(g, Icones24, MARGE, 62, c.bus ? 'B' : 'A', "transport");
   const int xTexte = MARGE + 56;
   g.setFont(&Texte9);
-  texte(g, xTexte, 34, c.ligne.empty() ? "Prochain passage" : (c.bus ? "Prochain bus" : "Prochain tram"));
+  texte(g, xTexte, 34, tronquer(g, c.arret.empty() ? (c.bus ? "Prochain bus" : "Prochain tram") : c.arret, xLimite - xTexte));
   g.setFont(&Gras11);
-  std::string ligne = c.ligne.empty() ? "--" : c.ligne + "  " + c.direction;
+  std::string ligne = c.nuit ? "Reprise à " + std::to_string(c.nuitFin) + "h" : (c.ligne.empty() ? "--" : c.ligne + " > " + c.direction);
   texte(g, xTexte, 64, tronquer(g, ligne, xLimite - xTexte));
   ligneH(g, SEP1, "separateur 1");
 }
@@ -299,7 +302,7 @@ static void pied(Adafruit_GFX& g, const Contenu& c) {
   if (c.meteo.valide) {
     icone(g, Icones16, MARGE, yBase - 2, iconeMeteo(c.meteo.code, c.nuit), "meteo actuelle");
     g.setFont(&Gras13);
-    texte(g, MARGE + 36, yBase - 6, std::to_string(c.meteo.temperature) + "°");
+    texte(g, MARGE + 36, yBase - 9, std::to_string(c.meteo.temperature) + "°");
   } else if (c.statut.empty()) {
     g.setFont(&Texte9);
     texte(g, MARGE, yBase - 8, "Météo indisponible");
@@ -323,7 +326,7 @@ static void pied(Adafruit_GFX& g, const Contenu& c) {
     texteCentre(g, xCol + wCol / 2, SEP3 + 14, j.nom, NOIR, wCol - 8);
     icone(g, Icones12, xCol + 4, yBase + 2, iconeMeteo(j.code, false), "meteo " + j.nom);
     g.setFont(&Texte9);
-    texte(g, xCol + 30, yBase + 1, std::to_string(j.tMin) + "-" + std::to_string(j.tMax) + "°");
+    texte(g, xCol + 30, yBase - 3, std::to_string(j.tMin) + "-" + std::to_string(j.tMax) + "°");
   }
 }
 
@@ -334,7 +337,9 @@ static void nuit(Adafruit_GFX& g, const Contenu& c) {
   g.setFont(&Gras13);
   texteCentre(g, LARGEUR / 2, SEP1 + 96, "Bonne nuit", NOIR, LARGEUR);
   ligneH(g, SEP2, "separateur 2");
-  frise(g, c);
+  g.setFont(&Texte9);
+  texteCentre(g, LARGEUR / 2, SEP2 + 34, "Pas de passage la nuit", NOIR, LARGEUR - 2 * MARGE);
+  ligneH(g, SEP3, "separateur 3");
   pied(g, c);
 }
 

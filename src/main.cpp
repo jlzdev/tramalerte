@@ -20,7 +20,6 @@ static const unsigned long APPUI_LONG_MS = 3000;
 static const unsigned long BOUTON_IGNORE_MS = 30000;
 static const unsigned long FETCH_MS = 30000;
 static const unsigned long FETCH_PROCHE_MS = 15000;
-static const unsigned long FETCH_NUIT_MS = 600000;
 static const unsigned long FETCH_ERREUR_MS = 20000;
 static const unsigned long METEO_MS = 30UL * 60 * 1000;
 static const unsigned long METEO_ERREUR_MS = 5UL * 60 * 1000;
@@ -124,7 +123,6 @@ static void rafraichirMeteo() {
 }
 
 static unsigned long intervalleFetch(const depart::Verdict& v) {
-  if (enNuit()) return FETCH_NUIT_MS;
   if (!erreur.isEmpty() && !cleRefusee) return FETCH_ERREUR_MS;
   const depart::Candidat* c = v.cibleOuNull();
   return c && c->resteSec < PROCHE_SEC ? FETCH_PROCHE_MS : FETCH_MS;
@@ -138,6 +136,7 @@ static dessin::Contenu contenuCourant(const depart::Verdict& v) {
   const int64_t now = nowMs();
   dessin::Contenu c = dessin::contenuDepuisVerdict(v, now, ARRONDI_SEC);
   c.heure = heureValide() ? depart::fmtHM(now) : "--h--";
+  c.arret = config.arret.c_str();
   c.departMin = config.departMin;
   c.meteo = meteoCourante;
   if (WiFi.status() != WL_CONNECTED) c.statut = "Wi-Fi perdu, reconnexion...";
@@ -152,11 +151,12 @@ static dessin::Contenu contenuCourant(const depart::Verdict& v) {
     else c.message = "Interrogation de Ginko...";
   }
   c.nuit = enNuit();
+  c.nuitFin = config.nuitFin;
   return c;
 }
 
 static std::string cleRendu(const dessin::Contenu& c) {
-  std::string s = c.heure + "|" + std::to_string((int)c.etat) + "|" + c.ligne + "|" + c.direction + "|" + c.arrivee + "|" + c.depart + "|" + c.dans + "|";
+  std::string s = c.heure + "|" + c.arret + "|" + std::to_string((int)c.etat) + "|" + c.ligne + "|" + c.direction + "|" + c.arrivee + "|" + c.depart + "|" + c.dans + "|";
   s += c.message + "|" + c.statut + "|" + (c.nuit ? "n" : "j") + "|" + std::to_string(c.departMin) + "|";
   s += std::to_string(c.meteo.valide) + std::to_string(c.meteo.temperature) + std::to_string(c.meteo.code);
   for (const dessin::Jour& j : c.meteo.jours) s += "|" + j.nom + std::to_string(j.code) + std::to_string(j.tMin) + std::to_string(j.tMax);
@@ -311,7 +311,21 @@ void loop() {
     return;
   }
   if (millis() - dernierNtp > NTP_MS) reglerHeure();
-  if (!simulation && (derniereTentative == 0 || millis() - derniereTentative > intervalleFetch(verdictCourant()))) {
+  static bool nuitPrecedente = false;
+  const bool nuit = enNuit();
+  if (nuit != nuitPrecedente) {
+    nuitPrecedente = nuit;
+    if (nuit) {
+      passagesTous.clear();
+      fetchedAtMs = 0;
+      Serial.println("[NUIT] debut, Ginko en pause");
+    } else {
+      Serial.println("[NUIT] fin, reprise des requetes Ginko");
+    }
+    derniereTentative = 0;
+    dernierRendu = "";
+  }
+  if (!simulation && !nuit && (derniereTentative == 0 || millis() - derniereTentative > intervalleFetch(verdictCourant()))) {
     rafraichir();
     afficher(false);
   }

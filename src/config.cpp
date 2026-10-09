@@ -17,15 +17,12 @@ void configCharger() {
   config.tram = memoire.getBool("tram", false);
   config.directions = memoire.getString("directions", "");
   config.departMin = memoire.getInt("departMin", depart::REGLAGES_DEFAUT.departMin);
-  config.margeMin = memoire.getInt("margeMin", depart::REGLAGES_DEFAUT.margeMin);
   config.nuitDebut = borner(memoire.getInt("nuitDebut", 23), 0, 24);
   config.nuitFin = borner(memoire.getInt("nuitFin", 6), 0, 24);
   config.latitude = memoire.getFloat("latitude", 0);
   config.longitude = memoire.getFloat("longitude", 0);
   memoire.end();
-  depart::Reglages r = config.reglages();
-  config.departMin = r.departMin;
-  config.margeMin = r.margeMin;
+  config.departMin = config.reglages().departMin;
 }
 
 void configEnregistrer() {
@@ -35,7 +32,6 @@ void configEnregistrer() {
   memoire.putBool("tram", config.tram);
   memoire.putString("directions", config.directions);
   memoire.putInt("departMin", config.departMin);
-  memoire.putInt("margeMin", config.margeMin);
   memoire.putInt("nuitDebut", config.nuitDebut);
   memoire.putInt("nuitFin", config.nuitFin);
   memoire.putFloat("latitude", config.latitude);

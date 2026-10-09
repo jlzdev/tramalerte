@@ -18,16 +18,13 @@ struct Passage {
 
 struct Reglages {
   int departMin = 5;
-  int margeMin = 1;
 };
 
 const Reglages REGLAGES_DEFAUT{};
 const int DEPART_MIN_MIN = 1;
 const int DEPART_MIN_MAX = 45;
-const int MARGE_MIN_MIN = 0;
-const int MARGE_MIN_MAX = 10;
 
-Reglages normaliserReglages(long departMin, long margeMin);
+Reglages normaliserReglages(long departMin);
 
 enum class Etat { Rate, Cours, Prepare, Tranquille, Inconnu };
 
